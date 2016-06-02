@@ -34,7 +34,7 @@ int icsc_serial_open(const char *path, unsigned long baud) {
     options.c_ispeed = baud;
     options.c_ospeed = baud;
     if (tcsetattr(fd, TCSANOW, &options) != 0) {
-        fprintf(stderr, "Can't set up serial: %d (%s)\n", errno, strerror(errno));
+        fprintf(stderr, "ICSC: Can't set up serial: %s\n", strerror(errno));
         return -1;
     }
 }

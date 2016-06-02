@@ -15,6 +15,10 @@ Building
     $ make
     $ sudo make install
 
+If `autoreconf` complains about no `m4` directory, just make it. Some older
+versions of `aclocal` error without it, but newer ones don't. Autoreconf
+should make it for you anyway.
+
 By default it installs into /usr/lib and /usr/include.
 
 It is possible to cross-compile the library on a Linux PC if you have the

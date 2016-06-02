@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libicsc], [1.0.0], [matt@majenko.co.uk])
-AC_CONFIG_SRCDIR([src/serial.c], [src/gpio.c])
+AC_CONFIG_SRCDIR([src/serial.c], [src/gpio.c], [src/icsc.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
