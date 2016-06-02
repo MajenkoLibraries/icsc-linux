@@ -37,8 +37,33 @@ extern "C" {
 //Increase or decrease the number to your needs
 #define ICSC_SOH_START_COUNT 1
 
+struct icsc_command;
+
+typedef struct icsc_command command_t;
+typedef struct icsc_command *command_ptr;
+
+typedef struct {
+    int uartFD;
+    int dePin;
+    command_ptr commandList;
+    uint8_t station;
+
+    char header[5];
+
+    char *buffer;
+
+    uint8_t recPhase;
+    uint8_t recPos;
+    uint8_t recCommand;
+    uint8_t recLen;
+    uint8_t recStation;
+    uint8_t recSender;
+    uint8_t recCS;
+    uint8_t recCalcCS;
+} icsc_t, *icsc_ptr;
+
 // Format of command callback functions
-typedef void(*callbackFunction)(unsigned char, char, unsigned char, char *);
+typedef void(*callbackFunction)(icsc_ptr, unsigned char, char, unsigned char, char *);
 
 // Structure to store command code / function pairs as a linked list
 struct icsc_command {
@@ -47,24 +72,6 @@ struct icsc_command {
     struct icsc_command *next;
 };
 
-typedef struct icsc_command command_t;
-typedef struct icsc_command *command_ptr;
-
-#ifndef ICSC_NO_STATS
-typedef struct {
-    unsigned long oob_bytes;
-    unsigned long rx_packets;
-    unsigned long rx_bytes;
-    unsigned long tx_packets;
-    unsigned long tx_bytes;
-    unsigned long tx_fail;
-    unsigned long cs_errors;
-    unsigned long cb_run;
-    unsigned long cb_bad;
-    unsigned long collision;
-
-} stats_t, *stats_ptr;
-#endif
 
 /* gpio.c */
 extern int icsc_gpio_open(int num, int mode);
