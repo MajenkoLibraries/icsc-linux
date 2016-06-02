@@ -22,7 +22,7 @@
             options.c_ospeed = S;  \
             break;
 #else
-#define BAUD_CHUNK(B, S) case ## B ## : \
+#define BAUD_CHUNK(B, S) case B : \
             options.c_cflag &= ~CBAUD;  \
             options.c_cflag |= B;   \
             break;
