@@ -17,4 +17,20 @@ m4/lt~obsolete.m4
 missing
 null.d
 src/Makefile.in
+Makefile
+config.h
+config.log
+config.status
+libtool
+src/.deps/
+src/.libs/
+src/Makefile
+src/gpio.lo
+src/gpio.o
+src/icsc.lo
+src/icsc.o
+src/libicsc.la
+src/serial.lo
+src/serial.o
+stamp-h1
 
