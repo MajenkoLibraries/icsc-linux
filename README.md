@@ -15,11 +15,12 @@ Building
     $ make
     $ sudo make install
 
-If `autoreconf` complains about no `m4` directory, just make it. Some older
-versions of `aclocal` error without it, but newer ones don't. Autoreconf
-should make it for you anyway.
+By default it installs into /usr/local/lib and /usr/local/include. To install it in
+/usr instead, change the configure command:
 
-By default it installs into /usr/local/lib and /usr/local/include.
+    $ ./configure --prefix=/usr
+    $ make
+    $ sudo make install
 
 It is possible to cross-compile the library on a Linux PC if you have the
 Raspberry Pi toolchain installed:
