@@ -11,12 +11,12 @@
 
 #include "icsc.h"
 
-#include "../config.h"
+#include "config.h"
 
 #define    BOTHER 0010000
 
 struct termios _savedOptions;
-int serial_open(const char *path, unsigned long baud) {
+int icsc_serial_open(const char *path, unsigned long baud) {
     int fd;
     struct termios options;
     fd = open(path, O_RDWR|O_NOCTTY);
@@ -38,7 +38,8 @@ int serial_open(const char *path, unsigned long baud) {
         return -1;
     }
 }
-int serial_available(int fd) {
+
+int icsc_serial_wait_available(int fd, unsigned long timeout) {
     if (fd < 0) {
         return 0;
     }
@@ -48,16 +49,20 @@ int serial_available(int fd) {
 
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = 1;
+    tv.tv_sec = timeout / 1000000;
+    tv.tv_usec = timeout & 1000000;
     int retval = select(fd+1, &rfds, NULL, NULL, &tv);
     if (retval) {
         return 1; 
     }
     return 0;
 }   
+
+int icsc_serial_available(int fd) {
+    return icsc_serial_wait_timeout(fd, 1);
+}   
     
-int serial_read(int fd) {
+int icsc_serial_read(int fd) {
     if (!available()) {
         return -1;
     }
@@ -67,14 +72,14 @@ int serial_read(int fd) {
     }
     return c;
 }       
-void flush(int fd) {
+void icsc_flush(int fd) {
     if (fd < 0) {
         return;
     }
     fsync(fd);
 }   
 
-size_t serial_write(int fd, uint8_t c) {
+size_t icsc_serial_write(int fd, uint8_t c) {
     if (fd < 0) {
         return 0;
     }
