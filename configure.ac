@@ -13,7 +13,6 @@ AX_PTHREAD
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_CXX
 
 # Checks for libraries.
 
@@ -31,11 +30,5 @@ AC_TYPE_INT32_T
 # Checks for library functions.
 AC_CHECK_FUNCS([select strerror])
 AC_FUNC_MALLOC
-
-AH_TEMPLATE([HAVE_C_ISPEED], [Define to indicate the presence of c_ispeed in the termios struct.])
-AH_TEMPLATE([HAVE_C_OSPEED], [Define to indicate the presence of c_ospeed in the termios struct.])
-
-AC_CHECK_MEMBER([struct termios.c_ispeed], [AC_DEFINE([HAVE_C_ISPEED])], [], [[#include <termios.h>]])
-AC_CHECK_MEMBER([struct termios.c_ospeed], [AC_DEFINE([HAVE_C_OSPEED])], [], [[#include <termios.h>]])
 
 AC_OUTPUT(Makefile src/Makefile)
