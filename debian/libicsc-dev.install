@@ -5,4 +5,4 @@ usr/share/pkgconfig/*
 
 examples/ping_sender/ping_sender.c usr/share/doc/libicsc-dev/examples/ping_sender
 examples/ping_sender/Makefile usr/share/doc/libicsc-dev/examples/ping_sender
-
+docs/html usr/share/doc/libicsc-dev

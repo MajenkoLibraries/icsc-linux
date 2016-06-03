@@ -10,7 +10,10 @@ AC_CONFIG_FILES([icsc.pc])
 AM_INIT_AUTOMAKE
 LT_INIT
 
-DX_INIT_DOXYGEN([ICSC], [Doxyfile], [docs])
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN";
+    then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+fi
 
 AX_PTHREAD
 
@@ -33,5 +36,8 @@ AC_TYPE_INT32_T
 # Checks for library functions.
 AC_CHECK_FUNCS([select strerror])
 AC_FUNC_MALLOC
+
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/Doxyfile])])
 
 AC_OUTPUT(Makefile src/Makefile)

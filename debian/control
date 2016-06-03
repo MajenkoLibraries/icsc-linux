@@ -1,7 +1,7 @@
 Source: libicsc
 Priority: extra
 Maintainer: unknown <matt@majenko.co.uk>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, doxygen
 Standards-Version: 3.9.3
 Section: libs
 Homepage: https://github.com/MajenkoLibraries/icsc-linux
