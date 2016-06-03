@@ -3,9 +3,19 @@
 #include <errno.h>
 #include <string.h>
 #include <endian.h>
+#include <pthread.h>
 
 #include "icsc.h"
 #include "config.h"
+
+static void *icsc_read_thread(void *arg) {
+    icsc_ptr icsc = (icsc_ptr)arg;
+
+    icsc->readThreadRunning = 1;
+    while (icsc->readThreadRunning == 1) {
+        icsc_process(icsc, 10000);
+    }
+}
 
 int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
     command_ptr newcmd;
@@ -64,6 +74,7 @@ int icsc_unregister_command(icsc_ptr icsc, char command) {
 
 icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int de) {
     icsc_ptr newicsc;
+    int rc;
 
     newicsc = (icsc_ptr)calloc(1, sizeof(icsc_t));
     
@@ -84,7 +95,7 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
 
     // If we have a GPIO pin specified then open it and set it to listen mode.
     if (newicsc->dePin >= 0) {
-        int rc = icsc_gpio_open(newicsc->dePin, ICSC_GPIO_OUTPUT);
+        rc = icsc_gpio_open(newicsc->dePin, ICSC_GPIO_OUTPUT);
         if (rc < 0) {
             icsc_serial_close(newicsc->uartFD);
             free(newicsc);
@@ -97,6 +108,27 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
             return NULL;
         }
     }
+
+    // Now start the reading thread. 
+
+    pthread_attr_t attr;
+    rc = pthread_attr_init(&attr);
+    if (rc != 0) {
+        fprintf(stderr, "ICSC: Cannot start read thread: %s\n", strerror(errno));
+        icsc_serial_close(newicsc->uartFD);
+        free(newicsc);
+        return NULL;
+    }
+
+    rc = pthread_create(&newicsc->readThread, &attr, &icsc_read_thread, newicsc);
+    if (rc != 0) {
+        fprintf(stderr, "ICSC: Cannot start read thread: %s\n", strerror(errno));
+        icsc_serial_close(newicsc->uartFD);
+        free(newicsc);
+        return NULL;
+    }
+
+    pthread_attr_destroy(&attr);
 
     return newicsc;
 }
@@ -211,8 +243,15 @@ int icsc_broadcast_char(icsc_ptr icsc, char command, int8_t data) {
 }
 
 int icsc_close(icsc_ptr icsc) {
+    void *res;
     if (icsc == NULL) {
         return -1;
+    }
+
+    icsc->readThreadRunning = 0;
+    int rc = pthread_join(icsc->readThread, &res);
+    if (rc != 0) {
+        fprintf(stderr, "ICSC: Cannot stop read thread: %s\n", strerror(errno));
     }
 
     if (icsc->commandList != NULL) {
@@ -249,7 +288,7 @@ int icsc_reset(icsc_ptr icsc) {
     return 0;
 }
 
-int icsc_process(icsc_ptr icsc) {
+int icsc_process(icsc_ptr icsc, unsigned long timeout) {
     char inch;
     int i;
     uint8_t cbok = 0;
@@ -263,7 +302,7 @@ int icsc_process(icsc_ptr icsc) {
         return -1;
     }
 
-    if (icsc_serial_available(icsc->uartFD) <= 0) {
+    if (icsc_serial_wait_available(icsc->uartFD, timeout) <= 0) {
         return 0;
     }
 

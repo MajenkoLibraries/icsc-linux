@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <termios.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +63,9 @@ typedef struct {
     uint8_t recSender;
     uint8_t recCS;
     uint8_t recCalcCS;
+
+    pthread_t readThread;
+    int readThreadRunning;
 } icsc_t, *icsc_ptr;
 
 // Format of command callback functions
@@ -111,7 +115,7 @@ extern int icsc_broadcast_char(icsc_ptr icsc, char command, int8_t data);
 extern int icsc_close(icsc_ptr icsc);
 extern int icsc_respond_to_ping(icsc_ptr icsc, uint8_t station, uint8_t len, char *data);
 extern int icsc_reset(icsc_ptr icsc);
-extern int icsc_process(icsc_ptr icsc);
+extern int icsc_process(icsc_ptr icsc, unsigned long timeout);
 
 #ifdef __cplusplus
 }

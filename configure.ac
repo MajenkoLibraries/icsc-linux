@@ -9,8 +9,11 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 LT_INIT
 
+AX_PTHREAD
+
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 
 # Checks for libraries.
 
@@ -18,11 +21,16 @@ AC_PROG_CC
 AC_CHECK_HEADERS([fcntl.h inttypes.h stdlib.h string.h sys/time.h termios.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
+AC_TYPE_INT8_T
+AC_TYPE_INT16_T
+AC_TYPE_INT32_T
 
 # Checks for library functions.
 AC_CHECK_FUNCS([select strerror])
+AC_FUNC_MALLOC
 
 AH_TEMPLATE([HAVE_C_ISPEED], [Define to indicate the presence of c_ispeed in the termios struct.])
 AH_TEMPLATE([HAVE_C_OSPEED], [Define to indicate the presence of c_ospeed in the termios struct.])
