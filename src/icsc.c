@@ -4,17 +4,36 @@
 #include <string.h>
 #include <endian.h>
 #include <pthread.h>
+#include <stdarg.h>
 
 #include "icsc.h"
 #include "config.h"
 
+int doDebug = 0;
+
+void icsc_enable_debug() { doDebug = 1; }
+void icsc_disable_debug() { doDebug = 0; }
+
+void icsc_debug(const char *f, ...) {
+    va_list arg;
+    if (doDebug == 1) {
+        va_start(arg, f);
+        vfprintf(stderr, f, arg);
+        va_end(arg);
+    }
+}
+
 static void *icsc_read_thread(void *arg) {
     icsc_ptr icsc = (icsc_ptr)arg;
 
+    icsc_debug("DEBUG: Read thread executing\n");
+
     icsc->readThreadRunning = 1;
     while (icsc->readThreadRunning == 1) {
-        icsc_process(icsc, 10000);
+        icsc_process(icsc, 100000); // 100ms timeout
     }
+
+    icsc_debug("DEBUG: Read thread finishing\n");
 }
 
 int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
@@ -40,6 +59,8 @@ int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
     for (scan = icsc->commandList; scan->next; scan = scan->next);
     scan->next = newcmd;
 
+    icsc_debug("DEBUG: Registered new command for code '%c'\n", newcmd->commandCode);
+
     return 0;
 }
 
@@ -62,6 +83,7 @@ int icsc_unregister_command(icsc_ptr icsc, char command) {
     // Scan through for it.
     for (scan = icsc->commandList; scan->next; scan = scan->next) {
         if (scan->next->commandCode == command) {
+            icsc_debug("DEBUG: Unregistered command for code '%c'\n", scan->next->commandCode);
             tmp = scan->next->next;
             free(scan->next);
             scan->next = tmp;
@@ -83,12 +105,16 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
         return NULL;
     }
 
+    icsc_debug("DEBUG: Endpoint allocated\n");
+
     // First try and open the UART.
     newicsc->uartFD = icsc_serial_open(uart, baud);
     if (newicsc->uartFD < 0) {
         free(newicsc);
         return NULL;
     }
+
+    icsc_debug("DEBUG: UART %s Opened\n", uart);
 
     newicsc->station = station;
     newicsc->dePin = de;
@@ -111,6 +137,10 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
 
     // Now start the reading thread. 
 
+    icsc_debug("DEBUG: Starting read thread\n");
+
+    pthread_mutex_init(&newicsc->uartMutex, NULL);
+
     pthread_attr_t attr;
     rc = pthread_attr_init(&attr);
     if (rc != 0) {
@@ -129,6 +159,8 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
     }
 
     pthread_attr_destroy(&attr);
+
+    icsc_debug("DEBUG: Read thread started OK\n");
 
     return newicsc;
 }
@@ -158,6 +190,8 @@ int icsc_send_raw(icsc_ptr icsc, uint8_t origin, unsigned char station, char com
     if (icsc->uartFD < 0) {
         return -1;
     }
+
+    pthread_mutex_lock(&icsc->uartMutex);
 
     icsc_assert_de(icsc);
 
@@ -190,6 +224,7 @@ int icsc_send_raw(icsc_ptr icsc, uint8_t origin, unsigned char station, char com
 
     icsc_serial_flush(icsc->uartFD);
     icsc_deassert_de(icsc);
+    pthread_mutex_unlock(&icsc->uartMutex);
     return 0;
 }
 
@@ -248,11 +283,15 @@ int icsc_close(icsc_ptr icsc) {
         return -1;
     }
 
+    icsc_debug("DEBUG: Closing ICSC channel\n");
+
     icsc->readThreadRunning = 0;
     int rc = pthread_join(icsc->readThread, &res);
     if (rc != 0) {
         fprintf(stderr, "ICSC: Cannot stop read thread: %s\n", strerror(errno));
     }
+
+    icsc_debug("DEBUG: Read thread joined\n");
 
     if (icsc->commandList != NULL) {
         command_ptr scan;
@@ -266,7 +305,9 @@ int icsc_close(icsc_ptr icsc) {
         }
 
     }
+
     free(icsc);
+    icsc_debug("DEBUG: Memory freed up\n");
     return 0;
 }
 
@@ -285,6 +326,7 @@ int icsc_reset(icsc_ptr icsc) {
     icsc->recCommand = 0;
     icsc->recCS = 0;
     icsc->recCalcCS = 0;
+    pthread_mutex_unlock(&icsc->uartMutex);
     return 0;
 }
 
@@ -319,6 +361,8 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                     icsc->recSender = icsc->header[2];
                     icsc->recCommand = icsc->header[3];
                     icsc->recLen = icsc->header[4];
+
+                    pthread_mutex_lock(&icsc->uartMutex);
 
                     for (i = 1; i < 4; i++) {
                         icsc->recCalcCS += icsc->header[i];

@@ -66,6 +66,7 @@ typedef struct {
 
     pthread_t readThread;
     int readThreadRunning;
+    pthread_mutex_t uartMutex;
 } icsc_t, *icsc_ptr;
 
 // Format of command callback functions
@@ -116,6 +117,8 @@ extern int icsc_close(icsc_ptr icsc);
 extern int icsc_respond_to_ping(icsc_ptr icsc, uint8_t station, uint8_t len, char *data);
 extern int icsc_reset(icsc_ptr icsc);
 extern int icsc_process(icsc_ptr icsc, unsigned long timeout);
+extern void icsc_enable_debug();
+extern void icsc_disable_debug();
 
 #ifdef __cplusplus
 }
