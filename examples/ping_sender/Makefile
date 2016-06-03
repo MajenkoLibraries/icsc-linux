@@ -1,9 +1,8 @@
-LIBS=-licsc
+LIBS=$(shell pkg-config --libs icsc)
 OBJS=ping_sender.o
 BIN=ping_sender
 CC=gcc
-CFLAGS=-I/usr/local/include
-LDFLAGS=-I/usr/local/lib -pthread
+CFLAGS=$(shell pkg-config --cflags icsc)
 
 $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)

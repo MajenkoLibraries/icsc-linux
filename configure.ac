@@ -6,6 +6,7 @@ AC_INIT([libicsc], [1.0.0], [matt@majenko.co.uk])
 AC_CONFIG_SRCDIR([src/serial.c], [src/gpio.c], [src/icsc.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_FILES([icsc.pc])
 AM_INIT_AUTOMAKE
 LT_INIT
 

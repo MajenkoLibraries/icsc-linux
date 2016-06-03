@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libicsc
+Description: ICSC library
+URL: https://github.com/MajenkoLibraries/icsc-linux
+Version: @VERSION@
+Requires: 
+Libs: -L${libdir} -licsc -pthread
+Cflags: -I${includedir}
