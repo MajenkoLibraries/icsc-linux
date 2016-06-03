@@ -20,7 +20,7 @@ int icsc_gpio_open(int num, int mode) {
         snprintf(temp, 200, "%s/export", gpio_root);
         fd = open(temp, O_WRONLY);
         if (fd < 0) {
-            fprintf(stderr, "ICSC: Unable to export GPIO%d: %s\n", num, strerror(errno));
+            icsc_error("Unable to export GPIO%d: %s\n", num, strerror(errno));
             return -1;
         }
         snprintf(temp, 200, "%d\n", num);
@@ -31,7 +31,7 @@ int icsc_gpio_open(int num, int mode) {
     snprintf(temp, 200, "%s/gpio%d/direction", gpio_root, num);
     fd = open(temp, O_WRONLY);
     if (fd < 0) {
-        fprintf(stderr, "ICSC: Unable to export GPIO%d: %s\n", num, strerror(errno));
+        icsc_error("Unable to export GPIO%d: %s\n", num, strerror(errno));
         return -1;
     }
 
@@ -49,7 +49,7 @@ int icsc_gpio_open(int num, int mode) {
     snprintf(temp, 200, "%s/gpio%d/value", gpio_root, num);
     fd = open(temp, O_RDWR);
     if (fd < 0) {
-        fprintf(stderr, "ICSC: Unable to export GPIO%d: %s\n", num, strerror(errno));
+        icsc_error("Unable to export GPIO%d: %s\n", num, strerror(errno));
         return -1;
     }
     close(fd);
@@ -67,7 +67,7 @@ int icsc_gpio_read(int num) {
     snprintf(temp, 200, "%s/gpio%d/value", gpio_root, num);
     fd = open(temp, O_RDWR);
     if (fd < 0) {
-        fprintf(stderr, "ICSC: Unable to read GPIO%d: %s\n", num, strerror(errno));
+        icsc_error("Unable to read GPIO%d: %s\n", num, strerror(errno));
         return -1;
     }
     read(fd, &c, 1);
@@ -88,7 +88,7 @@ int icsc_gpio_write(int num, int level) {
     snprintf(temp, 200, "%s/gpio%d/value", gpio_root, num);
     fd = open(temp, O_RDWR);
     if (fd < 0) {
-        fprintf(stderr, "ICSC: Unable to write GPIO%d: %s\n", num, strerror(errno));
+        icsc_error("Unable to write GPIO%d: %s\n", num, strerror(errno));
         return -1;
     }
     write(fd, level ? "1" : "0", 1);
@@ -105,7 +105,7 @@ int icsc_gpio_close(int num) {
     snprintf(temp, 200, "%s/unexport", gpio_root);
     fd = open(temp, O_WRONLY);
     if (fd < 0) {
-        fprintf(stderr, "ICSC: Unable to unexport GPIO%d: %s\n", num, strerror(errno));
+        icsc_error("Unable to unexport GPIO%d: %s\n", num, strerror(errno));
         return -1;
     }
     snprintf(temp, 200, "%d\n", num);

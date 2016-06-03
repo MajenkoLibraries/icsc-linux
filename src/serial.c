@@ -15,11 +15,15 @@
 
 #define    BOTHER 0010000
 
+#undef HAVE_C_ISPEED
+#undef HAVE_C_OSPEED
+
 #if defined(HAVE_C_ISPEED) && defined(HAVE_C_OSPEED)
 #define BAUD_CHUNK(B, S) case B : \
             options.c_cflag |= BOTHER;  \
             options.c_ispeed = S;  \
             options.c_ospeed = S;  \
+            icsc_debug("Setting baud to %d\n", S); \
             break;
 #else
 #define BAUD_CHUNK(B, S) case B : \
@@ -33,6 +37,7 @@ int icsc_serial_open(const char *path, unsigned long baud) {
     int fd;
     struct termios options;
     fd = open(path, O_RDWR|O_NOCTTY);
+    icsc_debug("UART open returned %d\n", fd);
     fcntl(fd, F_SETFL, 0);
     tcgetattr(fd, &_savedOptions);
     tcgetattr(fd, &options);
@@ -141,18 +146,20 @@ int icsc_serial_open(const char *path, unsigned long baud) {
             options.c_cflag |= BOTHER; 
             options.c_ispeed = baud;  
             options.c_ospeed = baud;  
+            icsc_debug("Setting baud to %d\n", baud);
             break;
 #else
         default:
-            fprintf(stderr, "ICSC: Can't set up serial: invalid baud rate\n");
+            icsc_error("Can't set up serial: invalid baud rate\n");
             return -1;
 #endif
     }
 
     if (tcsetattr(fd, TCSANOW, &options) != 0) {
-        fprintf(stderr, "ICSC: Can't set up serial: %s\n", strerror(errno));
+        icsc_error("Can't set up serial: %s\n", strerror(errno));
         return -1;
     }
+    return fd;
 }
 
 int icsc_serial_wait_available(int fd, unsigned long timeout) {
@@ -199,6 +206,7 @@ size_t icsc_serial_write(int fd, uint8_t c) {
     if (fd < 0) {
         return 0;
     }
+    icsc_debug("Writing 0x%02x to fd %d\n", c, fd);
     write(fd, &c, 1);
     return 1;
 }

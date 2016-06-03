@@ -18,22 +18,33 @@ void icsc_debug(const char *f, ...) {
     va_list arg;
     if (doDebug == 1) {
         va_start(arg, f);
-        vfprintf(stderr, f, arg);
+        char format[strlen(f) + 15];
+        sprintf(format, "ICSC DEBUG: %s", f);
+        vfprintf(stderr, format, arg);
         va_end(arg);
     }
+}
+
+void icsc_error(const char *f, ...) {
+    va_list arg;
+    va_start(arg, f);
+    char format[strlen(f) + 15];
+    sprintf(format, "ICSC ERROR: %s", f);
+    vfprintf(stderr, format, arg);
+    va_end(arg);
 }
 
 static void *icsc_read_thread(void *arg) {
     icsc_ptr icsc = (icsc_ptr)arg;
 
-    icsc_debug("DEBUG: Read thread executing\n");
+    icsc_debug("Read thread executing\n");
 
     icsc->readThreadRunning = 1;
     while (icsc->readThreadRunning == 1) {
         icsc_process(icsc, 100000); // 100ms timeout
     }
 
-    icsc_debug("DEBUG: Read thread finishing\n");
+    icsc_debug("Read thread finishing\n");
 }
 
 int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
@@ -59,7 +70,7 @@ int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
     for (scan = icsc->commandList; scan->next; scan = scan->next);
     scan->next = newcmd;
 
-    icsc_debug("DEBUG: Registered new command for code '%c'\n", newcmd->commandCode);
+    icsc_debug("Registered new command for code '%c'\n", newcmd->commandCode);
 
     return 0;
 }
@@ -83,7 +94,7 @@ int icsc_unregister_command(icsc_ptr icsc, char command) {
     // Scan through for it.
     for (scan = icsc->commandList; scan->next; scan = scan->next) {
         if (scan->next->commandCode == command) {
-            icsc_debug("DEBUG: Unregistered command for code '%c'\n", scan->next->commandCode);
+            icsc_debug("Unregistered command for code '%c'\n", scan->next->commandCode);
             tmp = scan->next->next;
             free(scan->next);
             scan->next = tmp;
@@ -105,7 +116,7 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
         return NULL;
     }
 
-    icsc_debug("DEBUG: Endpoint allocated\n");
+    icsc_debug("Endpoint allocated\n");
 
     // First try and open the UART.
     newicsc->uartFD = icsc_serial_open(uart, baud);
@@ -114,7 +125,7 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
         return NULL;
     }
 
-    icsc_debug("DEBUG: UART %s Opened\n", uart);
+    icsc_debug("UART %s Opened. FD: %d\n", uart, newicsc->uartFD);
 
     newicsc->station = station;
     newicsc->dePin = de;
@@ -137,7 +148,7 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
 
     // Now start the reading thread. 
 
-    icsc_debug("DEBUG: Starting read thread\n");
+    icsc_debug("Starting read thread\n");
 
     pthread_mutex_init(&newicsc->uartMutex, NULL);
 
@@ -158,9 +169,11 @@ icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int
         return NULL;
     }
 
+    pthread_detach(newicsc->readThread);
+
     pthread_attr_destroy(&attr);
 
-    icsc_debug("DEBUG: Read thread started OK\n");
+    icsc_debug("Read thread started OK\n");
 
     return newicsc;
 }
@@ -283,15 +296,12 @@ int icsc_close(icsc_ptr icsc) {
         return -1;
     }
 
-    icsc_debug("DEBUG: Closing ICSC channel\n");
+    icsc_debug("Closing ICSC channel\n");
 
     icsc->readThreadRunning = 0;
-    int rc = pthread_join(icsc->readThread, &res);
-    if (rc != 0) {
-        fprintf(stderr, "ICSC: Cannot stop read thread: %s\n", strerror(errno));
-    }
+    pthread_join(icsc->readThread, &res);
 
-    icsc_debug("DEBUG: Read thread joined\n");
+    icsc_debug("Read thread joined\n");
 
     if (icsc->commandList != NULL) {
         command_ptr scan;
@@ -307,7 +317,7 @@ int icsc_close(icsc_ptr icsc) {
     }
 
     free(icsc);
-    icsc_debug("DEBUG: Memory freed up\n");
+    icsc_debug("Memory freed up\n");
     return 0;
 }
 
@@ -333,7 +343,6 @@ int icsc_reset(icsc_ptr icsc) {
 int icsc_process(icsc_ptr icsc, unsigned long timeout) {
     char inch;
     int i;
-    uint8_t cbok = 0;
     command_ptr scan;
 
     if (icsc == NULL) {
@@ -351,6 +360,8 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
     while (icsc_serial_available(icsc->uartFD) > 0) {
         inch = icsc_serial_read(icsc->uartFD);
 
+        icsc_debug("Received 0x%02x from FD %d in phase %d\n", inch, icsc->uartFD, icsc->recPhase);
+
         switch (icsc->recPhase) {
             case 0: // Looking for header
                 memcpy(&(icsc->header[0]), &(icsc->header[1]), 5);
@@ -362,6 +373,7 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                     icsc->recCommand = icsc->header[3];
                     icsc->recLen = icsc->header[4];
 
+                    icsc_debug("Found valid header from %d to %d\n", icsc->recSender, icsc->recStation);
                     pthread_mutex_lock(&icsc->uartMutex);
 
                     for (i = 1; i < 4; i++) {
@@ -370,16 +382,20 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                     icsc->recPhase = 1;
                     icsc->recPos = 0;
 
-                    if ((icsc->recStation != icsc->station) ||
-                        (icsc->recStation != ICSC_BROADCAST &&
+                    if ((icsc->recStation != icsc->station) &&
+                        (icsc->recStation != ICSC_BROADCAST ||
                          icsc->recStation != ICSC_SYS_RELAY )) {
                         icsc_reset(icsc);
                         break;
                     }
 
+                    icsc_debug("Packet is for me!\n");
+
                     if (icsc->recLen == 0) {
+                        icsc_debug("No payload. Skipping to phase 2\n");
                         icsc->recPhase = 2;
                     } else {
+                        icsc_debug("Payload length %d\n", icsc->recLen);
                         icsc->buffer = (char *)malloc(icsc->recLen);
                     }
                 }
@@ -389,14 +405,17 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                 icsc->buffer[icsc->recPos++] = inch;
                 icsc->recCalcCS += inch;
                 if (icsc->recPos == icsc->recLen) {
+                    icsc_debug("Finished receiving data\n");
                     icsc->recPhase = 2;
                 }
                 break;
 
             case 2: // Check for ETX
                 if (inch == ETX) {
+                    icsc_debug("Got ETX\n");
                     icsc->recPhase = 3;
                 } else {
+                    icsc_debug("Expecting ETX but got 0x%02x\n", inch);
                     icsc_reset(icsc);
                 }
                 break;
@@ -404,28 +423,29 @@ int icsc_process(icsc_ptr icsc, unsigned long timeout) {
             case 3: // Grab the checksum
                 icsc->recCS = inch;
                 icsc->recPhase = 4;
+                icsc_debug("Received checksum byte of 0x%02x\n", inch);
                 break;
 
             case 4: // Check for ETX and check the checksum.
-                cbok = 0;
+                pthread_mutex_unlock(&icsc->uartMutex);
                 if (inch == EOT) {
+                    icsc_debug("Got EOT\n");
                     if (icsc->recCS == icsc->recCalcCS) {
+                        icsc_debug("Checksum is valid.\n");
 
                         switch (icsc->recCommand) {
                             case ICSC_SYS_PING:
+                                icsc_debug("Responding to ping\n");
                                 icsc_respond_to_ping(icsc, icsc->recSender, icsc->recLen, icsc->buffer);
                                 break;
-
-                            default:
-                                for (scan = icsc->commandList; scan; scan = scan->next) {
-                                    if ((scan->commandCode == icsc->recCommand || scan->commandCode == ICSC_CATCH_ALL) && scan->callback) {
-                                        scan->callback(icsc, icsc->recSender, icsc->recCommand, icsc->recLen, icsc->buffer);
-                                    }
-                                }
-                                break;
-
                         }
 
+                        for (scan = icsc->commandList; scan; scan = scan->next) {
+                            if ((scan->commandCode == icsc->recCommand || scan->commandCode == ICSC_CATCH_ALL) && scan->callback) {
+                                icsc_debug("Executing callback for command %c\n", scan->commandCode);
+                                scan->callback(icsc, icsc->recSender, icsc->recCommand, icsc->recLen, icsc->buffer);
+                            }
+                        }
                     }
                 } 
                 icsc_reset(icsc);
