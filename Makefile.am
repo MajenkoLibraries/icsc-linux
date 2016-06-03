@@ -5,4 +5,4 @@ SUBDIRS = src
 pkgconfigdir = $(datadir)/pkgconfig
 pkgconfig_DATA= icsc.pc
 
-
+@DX_RULES@

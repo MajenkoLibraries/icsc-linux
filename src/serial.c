@@ -180,13 +180,13 @@ void icsc_serial_flush(int fd) {
     fsync(fd);
 }   
 
-size_t icsc_serial_write(int fd, uint8_t c) {
+int icsc_serial_write(int fd, uint8_t c) {
     if (fd < 0) {
-        return 0;
+        return -1;
     }
     icsc_debug("Writing 0x%02x to fd %d\n", c, fd);
     write(fd, &c, 1);
-    return 1;
+    return 0;
 }
 
 void icsc_serial_close(int fd) {

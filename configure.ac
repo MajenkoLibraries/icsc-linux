@@ -10,6 +10,8 @@ AC_CONFIG_FILES([icsc.pc])
 AM_INIT_AUTOMAKE
 LT_INIT
 
+DX_INIT_DOXYGEN([ICSC], [Doxyfile], [docs])
+
 AX_PTHREAD
 
 # Checks for programs.
