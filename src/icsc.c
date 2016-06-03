@@ -11,9 +11,15 @@
 
 int doDebug = 0;
 
+/*! Enable debug messages */
 void icsc_enable_debug() { doDebug = 1; }
+/*! Disable debug messages */
 void icsc_disable_debug() { doDebug = 0; }
 
+/*! Print a debug message to stderr. Follows the same rules as printf().
+ *  Prepends "ICSC DEBUG: " to the message. Only prints if
+ *  debug mode is enabled with icsc_enable_debug().
+ */
 void icsc_debug(const char *f, ...) {
     va_list arg;
     if (doDebug == 1) {
@@ -25,6 +31,9 @@ void icsc_debug(const char *f, ...) {
     }
 }
 
+/*! Print a debug message to stderr. Follows the same rules as printf().
+ *  Prepends "ICSC ERROR: " to the message. 
+ */
 void icsc_error(const char *f, ...) {
     va_list arg;
     va_start(arg, f);
@@ -47,6 +56,19 @@ static void *icsc_read_thread(void *arg) {
     icsc_debug("Read thread finishing\n");
 }
 
+/*! Register a new command character and associate it with a callback function.
+ *
+ *  Parameters:
+ *
+ *  * icsc        Pointer to an icsc context created using icsc_init() or icsc_init_de()
+ *  * command     The character to use for the command
+ *  * func        The callback function to call when the command is received
+ *
+ *  Returns:
+ *
+ *  If the command was registered successfully it returns 0, otherwise -1 is returned and
+ *  and error message is printed using icsc_error().
+ */
 int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func) {
     command_ptr newcmd;
     command_ptr scan;
