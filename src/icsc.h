@@ -2,6 +2,8 @@
 #define _ICSC_H
 
 #include <stdint.h>
+#include <termios.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,8 +86,32 @@ extern int icsc_serial_open(const char *path, unsigned long baud);
 extern int icsc_serial_wait_available(int fd, unsigned long timeout);
 extern int icsc_serial_available(int fd);
 extern int icsc_serial_read(int fd);
-extern void icsc_flush(int fd);
+extern void icsc_serial_flush(int fd);
 extern size_t icsc_serial_write(int fd, uint8_t c);
+extern void icsc_serial_close(int fd);
+
+/* icsc.c */
+extern int icsc_register_command(icsc_ptr icsc, char command, callbackFunction func);
+extern int icsc_unregister_command(icsc_ptr icsc, char command);
+extern icsc_ptr icsc_init_de(const char *uart, unsigned long baud, uint8_t station, int de);
+extern icsc_ptr icsc_init(const char *uart, unsigned long baud, uint8_t station);
+extern void icsc_assert_de(icsc_ptr icsc);
+extern void icsc_deassert_de(icsc_ptr icsc);
+extern int icsc_send_raw(icsc_ptr icsc, uint8_t origin, unsigned char station, char command, uint8_t len, char *data);
+extern int icsc_send_array(icsc_ptr icsc, uint8_t station, char command, uint8_t len, char *data);
+extern int icsc_send_string(icsc_ptr icsc, uint8_t station, char command, char *str);
+extern int icsc_send_long(icsc_ptr icsc, uint8_t station, char command, int32_t data);
+extern int icsc_send_int(icsc_ptr icsc, uint8_t station, char command, int16_t data);
+extern int icsc_send_char(icsc_ptr icsc, uint8_t station, char command, int8_t data);
+extern int icsc_broadcast_array(icsc_ptr icsc, char command, uint8_t len, char *data);
+extern int icsc_broadcast_string(icsc_ptr icsc, char command, char *str);
+extern int icsc_broadcast_long(icsc_ptr icsc, char command, int32_t data);
+extern int icsc_broadcast_int(icsc_ptr icsc, char command, int16_t data);
+extern int icsc_broadcast_char(icsc_ptr icsc, char command, int8_t data);
+extern int icsc_close(icsc_ptr icsc);
+extern int icsc_respond_to_ping(icsc_ptr icsc, uint8_t station, uint8_t len, char *data);
+extern int icsc_reset(icsc_ptr icsc);
+extern int icsc_process(icsc_ptr icsc);
 
 #ifdef __cplusplus
 }

@@ -175,11 +175,11 @@ int icsc_serial_wait_available(int fd, unsigned long timeout) {
 }   
 
 int icsc_serial_available(int fd) {
-    return icsc_serial_wait_timeout(fd, 1);
+    return icsc_serial_wait_available(fd, 1);
 }   
     
 int icsc_serial_read(int fd) {
-    if (!available()) {
+    if (icsc_serial_available(fd) <= 0) {
         return -1;
     }
     uint8_t c;
@@ -188,7 +188,7 @@ int icsc_serial_read(int fd) {
     }
     return c;
 }       
-void icsc_flush(int fd) {
+void icsc_serial_flush(int fd) {
     if (fd < 0) {
         return;
     }
@@ -203,3 +203,9 @@ size_t icsc_serial_write(int fd, uint8_t c) {
     return 1;
 }
 
+void icsc_serial_close(int fd) {
+    if (fd < 0) {
+        return;
+    }
+    close(fd);
+}
