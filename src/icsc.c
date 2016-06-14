@@ -133,7 +133,7 @@ static int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                     icsc_debug("Found valid header from %d to %d\n", icsc->recSender, icsc->recStation);
                     pthread_mutex_lock(&icsc->uartMutex);
 
-                    for (i = 1; i < 4; i++) {
+                    for (i = 1; i < 5; i++) {
                         icsc->recCalcCS += icsc->header[i];
                     }
                     icsc->recPhase = 1;
@@ -203,6 +203,8 @@ static int icsc_process(icsc_ptr icsc, unsigned long timeout) {
                                 scan->callback(icsc, icsc->recSender, icsc->recCommand, icsc->recLen, icsc->buffer);
                             }
                         }
+                    } else {
+                        icsc_debug("Checksum isn't valid.\n");
                     }
                 } 
                 icsc_reset(icsc);
